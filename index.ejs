@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="/jquery/jquery.js"></script>
+    <script src="/common.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+</head>
+<body>
+    <%- include('./menu') %>
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end p-2">
+        <button class="btn btn-primary" type="button" id="test">Test</button>
+        <button class="btn btn-secondary" type="button" id="test2">Test2</button>
+    </div>
+    <table class="table" id="crawl_table"></table>
+
+    <!-- google trend 실시간 데이터 받아오기 -->
+    <!-- <script type="text/javascript" src="https://ssl.gstatic.com/trends_nrtr/3349_RC01/embed_loader.js"></script> <script type="text/javascript"> trends.embed.renderWidget("dailytrends", "", {"geo":"KR","guestPath":"https://trends.google.co.kr:443/trends/embed/"}); </script> -->
+</body>
+</html>
+<script>
+    var reqObj = {
+        '날짜': 'pubDate',                                  // 날짜
+        '키워드': 'title',                                  // 제목
+        '조회수': 'ht\\:approx_traffic',                    // 조회수
+        '기사제목': 'ht\\:news_item ht\\:news_item_title',  // 기사 제목
+        '기사링크': 'ht\\:news_item_url'                    // 기사 링크
+    };
+
+    $('#test').on('click', function () {
+        var target = 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=KR';
+
+        var url = '/crawl';
+        var data = {
+            'target': target,
+            'reqObj': reqObj
+        };
+
+        ajaxPostSend(getIssueCallBack, url, data);
+    });
+
+    function getIssueCallBack(data) {
+        var html = '';
+        var keys = Object.keys(reqObj);
+        var issue_list = data.result;
+
+        // 헤더 설정
+        html += '<thead><tr><th>#</th>';
+        for (var i = 0; i < keys.length; i++) {
+            html += `<th>${keys[i]}</th>`;
+        }
+        html += '</tr></thead>';
+
+        // 바디 설정
+        html += '<tbody>';
+        for (var i = 0; i < issue_list.length; i++) {
+            html += `<tr><th>${i + 1}</th>`;
+            for (var j = 0; j < keys.length; j++) {
+                html += `<td>${issue_list[i][keys[j]]}</td>`;
+            }
+            html += '</tr>';
+        }
+        html += '</tbody>';
+
+        $('#crawl_table').html('').html(html);
+    }
+
+    $('#test2').on('click', function () {
+        var url = '/select';
+
+        ajaxGetSend(getSelectTestCallBack, url);
+    });
+
+    function getSelectTestCallBack(data){
+        console.log(data);
+
+        var tmp = data[0].CRAWL_OBJECT;
+        var tmp2 = JSON.parse(tmp);
+
+        console.log(tmp2);
+    }
+</script>

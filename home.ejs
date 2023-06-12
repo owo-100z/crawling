@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <%- include('./import') %>
+</head>
+<body>
+    <%- include('./menu') %>
+    <div class="container-md p-3">
+        <figure>
+            <div class="row">
+                <div class="col">
+                    <blockquote class="blockquote">
+                        Home
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            선택해주세요
+                            </button>
+                            <ul class="dropdown-menu">
+                                <% list.forEach(function(item, idx){ %>
+                                    <li><a class="dropdown-item" href="#" onclick="javascript:chgSet(this);" data-idx="<%=idx%>"><%=item.CRAWL_NAME%></a></li>
+                                <% }); %>
+                            </ul>
+                        </div>
+                        <span class="badge rounded-pill text-bg-primary" id="selected"></span>
+                    </blockquote>        
+                </div>
+                <div class="col">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button class="btn btn-primary" type="button" id="proc">실행</button>
+                </div>
+            </div>
+            </div>
+            <figcaption class="blockquote-footer">
+                크롤링 할 사이트를 선택하고 버튼을 클릭해 주세요
+            </figcaption>
+        </figure>
+        <div class="container-md p-3 border rounded">
+            <table class="table" id="crawl_table"></table>
+        </div>
+    </div>
+</body>
+</html>
+<script>
+    var list = JSON.parse('<%-JSON.stringify(list)%>');
+    var selectedInfo;
+
+    $('#proc').on('click', function () {
+        if(!selectedInfo){
+            alert('please select item!');
+            return;
+        }
+
+        var target = selectedInfo.CRAWL_URL;
+        var item = selectedInfo.CRAWL_ITEM;
+        var reqObj = JSON.parse(selectedInfo.CRAWL_OBJECT);
+
+        var url = '/crawl';
+        var data = {
+            'target': target,
+            'item': item,
+            'reqObj': reqObj
+        }
+
+        ajaxPostSend(getIssueCallBack, url, data);
+    });
+
+    function getIssueCallBack(data) {
+        var html = '';
+        var reqObj = JSON.parse(selectedInfo.CRAWL_OBJECT);
+        var keys = Object.keys(reqObj);
+        var issue_list = data.result;
+
+        // 헤더 설정
+        html += '<thead><tr><th>#</th>';
+        for (var i = 0; i < keys.length; i++) {
+            html += `<th>${keys[i]}</th>`;
+        }
+        html += '</tr></thead>';
+
+        // 바디 설정
+        html += '<tbody>';
+        for (var i = 0; i < issue_list.length; i++) {
+            html += `<tr><th>${i + 1}</th>`;
+            for (var j = 0; j < keys.length; j++) {
+                html += `<td>${issue_list[i][keys[j]]}</td>`;
+            }
+            html += '</tr>';
+        }
+        html += '</tbody>';
+
+        $('#crawl_table').html('').html(html);
+    }
+
+    function chgSet(e){
+        selectedInfo = list[$(e).data('idx')];
+        $('#selected').text($(e).text());
+    }
+</script>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setting</title>
+    <%- include('./import') %>
+</head>
+
+<body>
+    <%- include('./menu') %>
+    <div class="container-md p-3">
+        <figure>
+            <div class="row">
+                <div class="col">
+                    <blockquote class="blockquote">
+                        Setting
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            선택해주세요
+                            </button>
+                            <ul class="dropdown-menu" id="infoList">
+                                <% list.forEach(function(item, idx){ %>
+                                    <li><a class="dropdown-item" href="#" onclick="javascript:chgSet(this);" data-idx="<%=idx%>"><%=item.CRAWL_NAME%></a></li>
+                                <% }); %>
+                            </ul>
+                        </div>
+                        <span class="badge rounded-pill text-bg-primary" id="selected"></span>
+                    </blockquote>        
+                </div>
+                <div class="col">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button class="btn btn-primary" type="button" id="save">저장</button>
+                    <button class="btn btn-danger" type="button" id="delete">삭제</button>
+                    <button class="btn btn-secondary" type="button" id="reset">리셋</button>
+                </div>
+            </div>
+            </div>
+            <figcaption class="blockquote-footer">
+                크롤링을 원하는 사이트의 정보를 설정하세요
+            </figcaption>
+        </figure>
+        <div class="container-md p-3 border rounded" id="crawlInfo">
+            <h3>크롤링 정보</h1>
+            <div class="mb-3">
+                <label for="crawlName" class="form-label"><strong>사이트 이름</strong></label>
+                <input type="text" class="form-control" name="crawlName" id="crawlName" placeholder="ex. 구글 트렌드">
+            </div>
+            <div class="mb-3">
+                <label for="crawlUrl" class="form-label"><strong>사이트 주소</strong></label>
+                <input type="text" class="form-control" name="crawlUrl" id="crawlUrl" placeholder="사이트 주소를 입력해 주세요.">
+            </div>
+            <div class="mb-3">
+                <label for="crawlItem" class="form-label"><strong>크롤링 아이템</strong></label>
+                <input type="text" class="form-control" name="crawlItem" id="crawlItem" placeholder="크롤링 할 배열의 아이템명을 입력해 주세요.">
+            </div>
+            <div class="mb-3">
+                <label for="crawlObject" class="form-label"><strong>크롤링 정보</strong></label>
+                <textarea class="form-control" name="crawlObject" id="crawlObject" rows="3" placeholder="크롤링 정보를 입력해 주세요. (json형식)
+ex. {'제목':'title', '내용':'content'}"></textarea>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+<script>
+    var list = JSON.parse('<%-JSON.stringify(list)%>');
+    var selectedInfo;
+
+    function selectInfo(){
+        var url = '/select';
+
+        ajaxGetSend(selectCallBack, url);
+    }
+
+    function chgSet(e){
+        selectedInfo = list[$(e).data('idx')];
+        $('#selected').text($(e).text());
+
+        $('#crawlName').val(selectedInfo.CRAWL_NAME);
+        $('#crawlUrl').val(selectedInfo.CRAWL_URL);
+        $('#crawlItem').val(selectedInfo.CRAWL_ITEM);
+        $('#crawlObject').val(selectedInfo.CRAWL_OBJECT);
+    }
+    
+    $('#reset').on('click', function(e){
+        resetInput();
+    });
+
+    $('#save').on('click', function(e){
+        // 선택된 항목이 있으면 update, 아니면 insert!
+        var url = selectedInfo ? '/update' : '/insert';
+
+        // form으로 감싸기
+        $('#crawlInfo').wrap('<form id="sendForm"></form>');
+
+        var formData = $('#sendForm').serializeArray();
+        var jsonData = {};
+
+        // form 데이터를 json으로 변환
+        $.each(formData, function(idx, field){
+            jsonData[field.name] = field.value;
+        });
+
+        // update시 key값 필요
+        if (selectedInfo) jsonData['crawlId'] = selectedInfo.CRAWL_ID;
+
+        $('#crawlInfo').unwrap();
+
+        ajaxPostSend(insertUpdateCallBack, url, jsonData);
+    });
+
+    $('#delete').on('click', function(e){
+        var url = '/delete';
+
+        if(!selectedInfo){
+            alert('삭제할 항목을 선택해 주세요');
+            return;
+        }
+
+        if(confirm('삭제 하시겠습니까?')){
+            var jsonData = {};
+            jsonData['crawlId'] = selectedInfo.CRAWL_ID;
+
+            ajaxPostSend(deleteCallBack, url, jsonData);
+        };
+    });
+
+    function insertUpdateCallBack(data) {
+        if (!data.err) {
+            alert('finished!');
+            selectInfo();
+        } else {
+            alert(`err: ${data.err.message}`);
+        }
+    }
+
+    function deleteCallBack(data){
+        if (!data.err) {
+            alert('finished!');
+            selectInfo();
+        } else {
+            alert(`err: ${data.err.message}`);
+        }
+    }
+
+    function resetInput(){
+        selectedInfo = null;
+        $('input').val('');
+        $('textarea').val('');
+        $('#selected').text('');
+    }
+
+    function selectCallBack(data){
+        list = data.rtn;
+        var html = '';
+        data.rtn.forEach(function(item, idx){
+            html += `<li><a class="dropdown-item" href="#" onclick="javascript:chgSet(this);" data-idx="${idx}">${item.CRAWL_NAME}</a></li>`;
+        });
+
+        $('#infoList').html('').html(html);
+        resetInput();
+    }
+</script>
